@@ -1,4 +1,6 @@
 import pygame
+from random import randint
+import random
 
 # Initialize Pygame
 pygame.init()
@@ -11,26 +13,55 @@ class GameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, image):
         super(GameObject, self).__init__()
         self.surf = pygame.image.load(image)
-        self.rect = self.surf.get_rect(center=(x, y))
+        self.rect = self.surf.get_rect(topleft=(x, y))
 
     def render(self, screen):
         screen.blit(self.surf, self.rect)
 
-# Calculate positions and create GameObjects
-rows, cols = 3, 3
-fruit_size = 64
-x_spacing = (500 - (cols * fruit_size)) // (cols + 1)
-y_spacing = (500 - (rows * fruit_size)) // (rows + 1)
-fruit_types = ['apple.png', 'strawberry.png']
+# Subclass GameObject for Apple that falls
+class Apple(GameObject):
+    def __init__(self):
+        super(Apple, self).__init__(0, 0, 'apple.png')
+        self.dy = (randint(0, 200) / 100) + 1
+        self.reset()
 
-# Generate a list of fruit GameObjects in a grid
-fruits = []
-for row in range(rows):
-    for col in range(cols):
-        x = (col * fruit_size) + (x_spacing * (col + 1)) + (fruit_size // 2)
-        y = (row * fruit_size) + (y_spacing * (row + 1)) + (fruit_size // 2)
-        fruit_image = fruit_types[(row + col) % len(fruit_types)]
-        fruits.append(GameObject(x, y, fruit_image))
+    def move(self):
+        self.rect.y += self.dy
+        # Check the y position of the apple
+        if self.rect.y > 500: 
+            self.reset()
+
+    # Reset the apple to the top of the screen at a random x position
+    def reset(self):
+        # self.rect.x = randint(50, 400)
+        # self.rect.y = -64
+        lanes = [93, 218, 343]
+        self.rect.x = random.choice(lanes)
+        self.rect.y = -64
+
+class Strawberry(GameObject):
+    def __init__(self):
+        super(Strawberry, self).__init__(0, 0, 'strawberry.png')
+        self.dx = (randint(0, 200) / 100) + 1
+        self.reset()
+
+    def move(self):
+        self.rect.x += self.dx
+        # Check the y position of the apple
+        if self.rect.x > 500: 
+            self.reset()
+
+    # Reset the apple to the top of the screen at a random x position
+    def reset(self):
+        self.rect.x = -64
+        self.rect.y = randint(0, 436)
+
+# Get the clock
+clock = pygame.time.Clock()
+
+# Make an instance of Apple
+apple = Apple()
+strawberry = Strawberry()
 
 # Create the game loop
 running = True
@@ -39,15 +70,22 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    
+    # Update the apple's position
+    apple.move()
+    strawberry.move()
 
     # Clear screen
     screen.fill((0, 0, 0))
-
-    # Render all fruits
-    for fruit in fruits:
-        fruit.render(screen)
-
+    
+    # Render the apple
+    apple.render(screen)
+    strawberry.render(screen)
+    
     # Update the window
     pygame.display.flip()
+    
+    # tick the clock!
+    clock.tick(60)
 
 pygame.quit()
