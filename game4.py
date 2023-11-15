@@ -1,9 +1,31 @@
 import pygame
+from PIL import Image
 from random import choice, randint
+
+def extract_gif_frames(gif_path, size):
+  frames = []
+  gif = Image.open(gif_path)
+  while True:
+    frame = gif.copy()
+    frame_pygame = pygame.image.fromstring(frame.tobytes(), frame.size, frame.mode)
+    frame_pygame = pygame.transform.scale(frame_pygame, size)  # Scale the frame
+    frames.append(frame_pygame)
+    try:
+      gif.seek(gif.tell() + 1)
+    except EOFError:
+      break
+  return frames
 
 pygame.init()
 
-screen = pygame.display.set_mode([500, 500])
+screen_size = (1000, 1000)
+screen = pygame.display.set_mode(screen_size)
+
+# Load the GIF frames
+gif_frames = extract_gif_frames('duck-hunt.gif', screen_size)
+current_frame = 0
+frame_rate = 60
+frame_counter = 0
 
 lanes = [93, 218, 343]
 
@@ -177,10 +199,15 @@ while running:
       elif event.key == pygame.K_DOWN:
         player.down()
 
+  # Background animation
+  frame_counter += 1
+  if frame_counter >= frame_rate:
+    frame_counter = 0
+    current_frame = (current_frame + 1) % len(gif_frames)
+  screen.blit(gif_frames[current_frame], (0, 0))
+
   for entity in all_sprites:
     entity.move()
-
-  screen.fill((0, 0, 0))
 
   for entity in all_sprites:
     entity.render(screen)
