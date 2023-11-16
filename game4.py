@@ -21,13 +21,12 @@ pygame.init()
 screen_size = (1000, 1000)
 screen = pygame.display.set_mode(screen_size)
 
-# Load the GIF frames
 gif_frames = extract_gif_frames('duck-hunt.gif', screen_size)
 current_frame = 0
 frame_rate = 60
 frame_counter = 0
 
-lanes = [93, 218, 343]
+lanes = [100, 450, 800]
 
 class GameObject(pygame.sprite.Sprite):
   def __init__(self, x, y, image):
@@ -39,61 +38,67 @@ class GameObject(pygame.sprite.Sprite):
 
   def render(self, screen):
     screen.blit(self.surf, self.rect.topleft)
-
+  
 class Player(GameObject):
   def __init__(self):
-    super(Player, self).__init__(250, 250, 'player.png')
-    self.current_h_lane = 1
-    self.current_v_lane = 1
-    self.dx = lanes[self.current_h_lane]
-    self.dy = lanes[self.current_v_lane]
-    self.reset()
+    # Initialize the player at a specific position with an image
+    super(Player, self).__init__(250, 250, 'Mario.png')
+    self.dx = self.x
+    self.dy = self.y
+    self.speed = 20
+    self.smoothness = 0.1
+    self.resize_mario()
 
+  def resize_mario(self):
+    new_size = (100, 100)
+    self.surf = pygame.transform.scale(self.surf, new_size)
+    self.rect = self.surf.get_rect(center=(self.x, self.y))
+  
   def left(self):
-    if self.current_h_lane > 0:
-      self.current_h_lane -= 1
-      self.update_dx_dy()
+    self.dx -= self.speed
 
   def right(self):
-    if self.current_h_lane < len(lanes) - 1:
-      self.current_h_lane += 1
-      self.update_dx_dy()
+    self.dx += self.speed
 
   def up(self):
-    if self.current_v_lane > 0:
-      self.current_v_lane -= 1
-      self.update_dx_dy()
+    self.dy -= self.speed
 
   def down(self):
-    if self.current_v_lane < len(lanes) - 1:
-      self.current_v_lane += 1
-      self.update_dx_dy()
+    self.dy += self.speed
 
   def move(self):
-    self.x += (self.dx - self.x) * 0.1
-    self.y += (self.dy - self.y) * 0.1
-    self.rect.center = (self.x, self.y)
+    # Gradually move towards the target position for smooth floating effect
+    self.x += (self.dx - self.x) * self.smoothness
+    self.y += (self.dy - self.y) * self.smoothness
+
+    # Update the rect position based on the new position
+    self.rect.x = self.x
+    self.rect.y = self.y
+
+    # Ensure the player doesn't move off the screen
+    self.rect.x = max(0, min(self.rect.x, screen_size[0] - self.rect.width))
+    self.rect.y = max(0, min(self.rect.y, screen_size[1] - self.rect.height))
 
   def reset(self):
-    self.dx = lanes[self.current_h_lane]
-    self.dy = lanes[self.current_v_lane]
-    self.rect.center = (self.dx, self.dy)
+    # Reset the player's position and target position
+    self.x = 250
+    self.y = 250
+    self.dx = self.x
+    self.dy = self.y
+    self.rect.center = (self.x, self.y)
+    self.resize_mario()
 
-  def update_dx_dy(self):
-    self.dx = lanes[self.current_h_lane]
-    self.dy = lanes[self.current_v_lane]
-
-class Apple(GameObject):
+class Mushroom(GameObject):
   def __init__(self):
     x = choice(lanes)
     y = -64
-    super(Apple, self).__init__(x, y, 'apple.png')
+    super(Mushroom, self).__init__(x, y, 'mushroom.png')
     self.direction = 1
     self.reset()
 
   def move(self):
     self.y += self.dy * self.direction
-    if self.direction == 1 and self.y > 500:
+    if self.direction == 1 and self.y > 1000:
       self.reset()
     elif self.direction == -1 and self.y < -64:
       self.reset()
@@ -102,20 +107,20 @@ class Apple(GameObject):
   def reset(self):
     self.x = choice(lanes)
     self.direction = 1 if self.y < 0 else -1
-    self.y = -64 if self.direction == 1 else 500
+    self.y = -64 if self.direction == 1 else 1000
     self.dy = (randint(0, 200) / 100) + 1
 
-class Strawberry(GameObject):
+class Princess(GameObject):
   def __init__(self):
     x = -64
     y = choice(lanes)
-    super(Strawberry, self).__init__(x, y, 'strawberry.png')
+    super(Princess, self).__init__(x, y, 'princess.png')
     self.direction = 1
     self.reset()
 
   def move(self):
     self.x += self.dx * self.direction
-    if self.direction == 1 and self.x > 500:
+    if self.direction == 1 and self.x > 1000:
       self.reset()
     elif self.direction == -1 and self.x < -64:
       self.reset()
@@ -124,21 +129,21 @@ class Strawberry(GameObject):
   def reset(self):
     self.y = choice(lanes)
     self.direction = 1 if self.x < 0 else -1
-    self.x = -64 if self.direction == 1 else 500
+    self.x = -64 if self.direction == 1 else 1000
     self.dx = (randint(0, 200) / 100) + 1
 
-class Bomb(GameObject):
+class Bowser(GameObject):
   def __init__(self):
     self.direction = choice(['up', 'down', 'left', 'right'])
-    super(Bomb, self).__init__(0, 0, 'bomb.png')
+    super(Bowser, self).__init__(0, 0, 'bowser.png')
     self.dx = (randint(0, 200) / 100) + 1
     self.dy = (randint(0, 200) / 100) + 1
     self.reset()
 
-  def resize_bomb(self):
-    new_size = (50, 50)
-    self.surf = pygame.transform.scale(self.surf, new_size)
-    self.rect = self.surf.get_rect(center=(self.x, self.y))
+  # def resize_bomb(self):
+  #   new_size = (50, 50)
+  #   self.surf = pygame.transform.scale(self.surf, new_size)
+  #   self.rect = self.surf.get_rect(center=(self.x, self.y))
 
   def move(self):
     if self.direction == 'up':
@@ -154,31 +159,31 @@ class Bomb(GameObject):
       self.reset()
 
   def off_screen(self):
-    return self.y < -64 or self.y > 500 or self.x < -64 or self.x > 500
+    return self.y < -64 or self.y > 1000 or self.x < -64 or self.x > 1000
 
   def random_position_offscreen(self):
     if self.direction == 'up':
-      return choice(lanes), 500
+      return choice(lanes), 1000
     elif self.direction == 'down':
       return choice(lanes), -64
     elif self.direction == 'left':
-      return 500, choice(lanes)
+      return 1000, choice(lanes)
     else:
       return -64, choice(lanes)
 
   def reset(self):
     self.x, self.y = self.random_position_offscreen()
     self.direction = choice(['up', 'down', 'left', 'right'])
-    self.resize_bomb()
+    # self.resize_bomb()
 
 player = Player()
-apple = Apple()
-strawberry = Strawberry()
-bomb = Bomb()
+mushroom = Mushroom()
+princess = Princess()
+bowser = Bowser()
 
-all_sprites = pygame.sprite.Group(player, apple, strawberry, bomb)
-fruit_sprites = pygame.sprite.Group(apple, strawberry)
-bomb_sprites = pygame.sprite.Group(bomb)
+all_sprites = pygame.sprite.Group(player, mushroom, princess, bowser)
+ally_sprites = pygame.sprite.Group(mushroom, princess)
+bowser_sprites = pygame.sprite.Group(bowser)
 
 clock = pygame.time.Clock()
 
@@ -212,11 +217,11 @@ while running:
   for entity in all_sprites:
     entity.render(screen)
 
-  fruit_hit = pygame.sprite.spritecollideany(player, fruit_sprites)
+  fruit_hit = pygame.sprite.spritecollideany(player, ally_sprites)
   if fruit_hit:
     fruit_hit.reset()
 
-  bomb_hit = pygame.sprite.spritecollideany(player, bomb_sprites)
+  bomb_hit = pygame.sprite.spritecollideany(player, bowser_sprites)
   if bomb_hit:
     running = False
 
