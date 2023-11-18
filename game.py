@@ -1,53 +1,110 @@
 import pygame
+from PIL import Image
+from random import choice, randint
+from constants import SCREEN_SIZE, FRAME_RATE
+from Player import Player
+from Mushroom import Mushroom
+from Princess import Princess
+from Cloud import Cloud
+from Bowser import Bowser
 
-# Initialize Pygame
-pygame.init()
+def extract_gif_frames(gif_path, size):
+  """
+  Extracts frames from a GIF file and returns a list of pygame surfaces.
 
-# Configure the screen
-screen = pygame.display.set_mode([500, 500])
+  Parameters:
+  - gif_path (str): The path to the GIF file.
+  - size (tuple): The desired size of the frames.
 
-# Define the GameObject class
-class GameObject(pygame.sprite.Sprite):
-    def __init__(self, x, y, image):
-        super(GameObject, self).__init__()
-        self.surf = pygame.image.load(image)
-        self.rect = self.surf.get_rect(center=(x, y))
+  Returns:
+  - frames (list): A list of pygame surfaces representing the frames of the GIF.
+  """
+  frames = []
+  gif = Image.open(gif_path)
+  while True:
+    frame = gif.copy()
+    frame_pygame = pygame.image.fromstring(frame.tobytes(), frame.size, frame.mode)
+    frame_pygame = pygame.transform.scale(frame_pygame, size)
+    frames.append(frame_pygame)
+    try:
+      gif.seek(gif.tell() + 1)
+    except EOFError:
+      break
+  return frames
 
-    def render(self, screen):
-        screen.blit(self.surf, self.rect)
+def main():
+  """
+  The main function that runs the game loop.
 
-# Calculate positions and create GameObjects
-rows, cols = 3, 3
-fruit_size = 64
-x_spacing = (500 - (cols * fruit_size)) // (cols + 1)
-y_spacing = (500 - (rows * fruit_size)) // (rows + 1)
-fruit_types = ['apple.png', 'strawberry.png']
+  This function initializes the game, sets up the game window, creates game objects,
+  handles user input, updates game state, and renders the game on the screen.
 
-# Generate a list of fruit GameObjects in a grid
-fruits = []
-for row in range(rows):
-    for col in range(cols):
-        x = (col * fruit_size) + (x_spacing * (col + 1)) + (fruit_size // 2)
-        y = (row * fruit_size) + (y_spacing * (row + 1)) + (fruit_size // 2)
-        fruit_image = fruit_types[(row + col) % len(fruit_types)]
-        fruits.append(GameObject(x, y, fruit_image))
+  Returns:
+    None
+  """
+  pygame.init()
+  screen = pygame.display.set_mode(SCREEN_SIZE)
 
-# Create the game loop
-running = True
-while running:
-    # Looks at events
+  gif_frames = extract_gif_frames('images/duck-hunt.gif', SCREEN_SIZE)
+  current_frame = 0
+  frame_counter = 0
+
+  player = Player()
+  mushroom = Mushroom()
+  princess = Princess()
+  cloud = Cloud()
+  bowser = Bowser()
+
+  cloud_sprites = pygame.sprite.Group(cloud)
+  all_sprites = pygame.sprite.Group(player, mushroom, princess, bowser)
+  ally_sprites = pygame.sprite.Group(mushroom, princess)
+  bowser_sprites = pygame.sprite.Group(bowser)
+
+  clock = pygame.time.Clock()
+  running = True
+
+  while running:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+      if event.type == pygame.QUIT:
+        running = False
+      elif event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+          running = False
+        elif event.key == pygame.K_LEFT:
+          player.left()
+        elif event.key == pygame.K_RIGHT:
+          player.right()
+        elif event.key == pygame.K_UP:
+          player.up()
+        elif event.key == pygame.K_DOWN:
+          player.down()
 
-    # Clear screen
-    screen.fill((0, 0, 0))
+    frame_counter += 1
+    if frame_counter >= FRAME_RATE:
+      frame_counter = 0
+      current_frame = (current_frame + 1) % len(gif_frames)
+    screen.blit(gif_frames[current_frame], (0, 0))
 
-    # Render all fruits
-    for fruit in fruits:
-        fruit.render(screen)
+    for cloud in cloud_sprites:
+      cloud.move()
+      cloud.render(screen)
 
-    # Update the window
+    for entity in all_sprites:
+      entity.move()
+      entity.render(screen)
+
+    fruit_hit = pygame.sprite.spritecollideany(player, ally_sprites)
+    if fruit_hit:
+      fruit_hit.reset()
+
+    bomb_hit = pygame.sprite.spritecollideany(player, bowser_sprites)
+    if bomb_hit:
+      running = False
+
     pygame.display.flip()
+    clock.tick(FRAME_RATE)
 
-pygame.quit()
+  pygame.quit()
+
+if __name__ == "__main__":
+  main()
