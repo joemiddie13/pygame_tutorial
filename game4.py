@@ -132,6 +132,26 @@ class Princess(GameObject):
     self.x = -64 if self.direction == 1 else 1000
     self.dx = (randint(0, 200) / 100) + 1
 
+class Cloud(GameObject):
+  def __init__(self):
+    x = -64
+    y = randint(0, screen_size[1])
+    super(Cloud, self).__init__(x, y, 'clouds.png')
+    self.dx = randint(1, 3)  # Horizontal speed of the cloud
+
+  def move(self):
+    self.x += self.dx  # Move the cloud horizontally
+    if self.x > screen_size[0] + 64:
+      self.reset()
+    self.rect.x = self.x
+
+  def reset(self):
+    self.x = -64
+    self.y = randint(0, screen_size[1])
+    self.surf = pygame.image.load('clouds.png')
+    self.rect = self.surf.get_rect(center=(self.x, self.y))
+
+
 class Bowser(GameObject):
   def __init__(self):
     self.direction = choice(['up', 'down', 'left', 'right'])
@@ -140,7 +160,7 @@ class Bowser(GameObject):
     self.dy = (randint(0, 200) / 100) + 1
     self.reset()
 
-  # def resize_bomb(self):
+  # def resize_bomb(self):      
   #   new_size = (50, 50)
   #   self.surf = pygame.transform.scale(self.surf, new_size)
   #   self.rect = self.surf.get_rect(center=(self.x, self.y))
@@ -180,7 +200,10 @@ player = Player()
 mushroom = Mushroom()
 princess = Princess()
 bowser = Bowser()
+clouds = Cloud()
 
+cloud_sprites = pygame.sprite.Group()
+cloud_sprites.add(clouds)
 all_sprites = pygame.sprite.Group(player, mushroom, princess, bowser)
 ally_sprites = pygame.sprite.Group(mushroom, princess)
 bowser_sprites = pygame.sprite.Group(bowser)
@@ -210,6 +233,10 @@ while running:
     frame_counter = 0
     current_frame = (current_frame + 1) % len(gif_frames)
   screen.blit(gif_frames[current_frame], (0, 0))
+
+  for cloud in cloud_sprites:
+    cloud.move()
+    cloud.render(screen)
 
   for entity in all_sprites:
     entity.move()
