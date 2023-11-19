@@ -43,7 +43,13 @@ def main():
     None
   """
   pygame.init()
+  pygame.mixer.init()
   screen = pygame.display.set_mode(SCREEN_SIZE)
+
+  pygame.mixer.music.load('music&sounds/mario_music.mp3')
+  pygame.mixer.music.play(-1)
+
+  powerup_sound = pygame.mixer.Sound('music&sounds/powerup.wav')
 
   gif_frames = extract_gif_frames('images/duck-hunt.gif', SCREEN_SIZE)
   current_frame = 0
@@ -96,6 +102,7 @@ def main():
     fruit_hit = pygame.sprite.spritecollideany(player, ally_sprites)
     if fruit_hit:
       fruit_hit.reset()
+      powerup_sound.play()
 
     bomb_hit = pygame.sprite.spritecollideany(player, bowser_sprites)
     if bomb_hit:
