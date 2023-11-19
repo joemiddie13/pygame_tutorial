@@ -1,4 +1,5 @@
 import pygame
+import pygame.font
 from PIL import Image
 from random import choice, randint
 from constants import SCREEN_SIZE, FRAME_RATE
@@ -45,11 +46,17 @@ def main():
   pygame.init()
   pygame.mixer.init()
   screen = pygame.display.set_mode(SCREEN_SIZE)
+  score = 0
 
+  # Load Mario Theme Music
   pygame.mixer.music.load('music&sounds/mario_music.mp3')
   pygame.mixer.music.play(-1)
-
   powerup_sound = pygame.mixer.Sound('music&sounds/powerup.wav')
+  bowser_hit = pygame.mixer.Sound('music&sounds/bowser_hit.wav')
+
+  # Scoreboard 
+  pygame.font.init()
+  font = pygame.font.SysFont("Arial", 30)
 
   gif_frames = extract_gif_frames('images/duck-hunt.gif', SCREEN_SIZE)
   current_frame = 0
@@ -68,6 +75,13 @@ def main():
 
   clock = pygame.time.Clock()
   running = True
+
+  def reset_game():
+    player.reset()
+    mushroom.reset()
+    princess.reset()
+    cloud.reset()
+    bowser.reset()
 
   while running:
     for event in pygame.event.get():
@@ -103,10 +117,16 @@ def main():
     if fruit_hit:
       fruit_hit.reset()
       powerup_sound.play()
+      score += 10
 
     bomb_hit = pygame.sprite.spritecollideany(player, bowser_sprites)
     if bomb_hit:
-      running = False
+      bowser_hit.play()
+      score -= 10
+      reset_game()
+    
+    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+    screen.blit(score_text, (10, 10))
 
     pygame.display.flip()
     clock.tick(FRAME_RATE)
